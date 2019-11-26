@@ -22,9 +22,7 @@ public class Evento
     public override string ToString()
     {
         string res = "";
-        res += "id: " + this.id + "\n";
-        res += "material: " + this.material + "\n";
-        res += "posicion" + position.ToString();
+        res += "id: " + this.id + "\nmaterial: " + this.material + "\nposicion" + position.ToString();
         //res += "x: " + this.position.x + "    y:" + this.position.y + "    z:" + this.position.z;
         return res;
     }

@@ -248,6 +248,10 @@ MonoBehaviour:
   isTower: 1
   range: 20
   espera: 0.1
+  printList:
+  - {fileID: 1391666078}
+  - {fileID: 411887747}
+  - {fileID: 1517116248}
   dest: []
 --- !u!54 &411887753
 Rigidbody:
@@ -553,7 +557,7 @@ MonoBehaviour:
   - {fileID: 859690311}
   actual: 0
   range: 0.2
-  speed: 5
+  speed: 15
 --- !u!114 &1391666081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -572,6 +576,10 @@ MonoBehaviour:
   isTower: 0
   range: 20
   espera: 0.1
+  printList:
+  - {fileID: 1391666078}
+  - {fileID: 411887747}
+  - {fileID: 1517116248}
   dest: []
 --- !u!135 &1391666082
 SphereCollider:
@@ -655,6 +663,7 @@ MonoBehaviour:
   isTower: 1
   range: 20
   espera: 0.1
+  printList: []
   dest: []
 --- !u!1001 &1603946608
 PrefabInstance:

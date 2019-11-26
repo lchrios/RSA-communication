@@ -15,7 +15,7 @@ public class Movement : MonoBehaviour
     {
         this.actual = 0;
         this.range = 0.2f;
-        this.speed = 5.0f;
+        this.speed = 15.0f;
         StartCoroutine(checaSiLlego());
     }
 

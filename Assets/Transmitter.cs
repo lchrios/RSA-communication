@@ -11,13 +11,15 @@ public class Transmitter : MonoBehaviour
     public float range,
                  espera;
     public BigInteger privateKey = BigInteger.Parse("9516311845790656153499716760847001433441357"), 
-                      publicKey = BigInteger.Parse("5617843187844953170308463622230283376298685"),
+                      publicKey = BigInteger.Parse("56178431878449531703084636222302833762986855"),
                       e = 65537;
+    public GameObject[] printList;
+
     public List<Evento> qEv;
     public List<GameObject> dest;
 
-    public List<Evento> logCod = new List<Evento>();
-    public List<Evento> logDec = new List<Evento>();
+    public List<Evento> logCod;
+    public List<Evento> logDec;
 
     // Start is called before the first frame update
     void Start()
@@ -25,8 +27,11 @@ public class Transmitter : MonoBehaviour
         this.espera = 0.1f;
         this.isTower = true;
         this.qEv = new List<Evento>();
+        this.dest = new List<GameObject>();
+        this.logCod = new List<Evento>();
+        this.logDec = new List<Evento>();
         StartCoroutine(generateRandomEvent());
-        dest = new List<GameObject>();
+        
     }
 
     // Update is called once per frame
@@ -35,7 +40,7 @@ public class Transmitter : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Keypad1))
         {
             // Imprime avion
-            GameObject go = GameObject.FindGameObjectWithTag("avion");
+            GameObject go = printList[0];
 
             Debug.Log("Historial de mensajes de: " + go.tag);
 
@@ -53,7 +58,7 @@ public class Transmitter : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.Keypad2))
         {
             // Imprime torre1
-            GameObject go = GameObject.FindGameObjectWithTag("torre1");
+            GameObject go = printList[1];
 
             Debug.Log("Historial de mensajes de: " + go.name);
 
@@ -69,7 +74,7 @@ public class Transmitter : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.Keypad3))
         {
             // Imprime torre2s
-            GameObject go = GameObject.FindGameObjectWithTag("torre2");
+            GameObject go = printList[2];
 
             Debug.Log("Historial de mensajes de: " + go.name);
 
@@ -93,11 +98,33 @@ public class Transmitter : MonoBehaviour
             string id = Random.Range(10000, 99999).ToString();
             string material = materiales[(int)Random.Range(0, 4)];
             GameObject destino = whiteList[(int)Random.Range(0, whiteList.Length)];
-            Vector3 position = new Vector3(Random.Range(-10000.0f, 10000.0f), Random.Range(500.0f, 10000.0f), Random.Range(-10000.0f, 10000.0f));
+            Vector3 position = new Vector3(Random.Range(0.0f, 100000.0f), Random.Range(500.0f, 40000.0f), Random.Range(0.0f, 100000.0f));
             Evento ev = new Evento(id, material, position);
             qEv.Add(ev);
+
+            Debug.Log(gameObject.tag + " ==> " + destino.tag);
+
+            Debug.Log("Info Original");
             Debug.Log(ev.ToString());
-            Debug.Log("\n" + gameObject.tag + " -> " + destino.tag);
+            Debug.Log(ev.position.ToString());
+
+            Evento evC = RSAencode(ev);
+            Debug.Log("Info Codificada");
+            Debug.Log(evC.ToString());
+            Debug.Log(evC.position.ToString());
+
+            Evento dEv = RSAdescode(ev);
+            Debug.Log("Info Decodificada");
+            Debug.Log(dEv.ToString());
+            Debug.Log(dEv.position.ToString());
+
+
+
+
+
+            Debug.Log(dEv.ToString());
+            Debug.Log(dEv.position.ToString());
+            //Debug.Log("\n" + gameObject.tag + " -> " + destino.tag);
             dest.Add(destino);
         }
     }
@@ -106,24 +133,29 @@ public class Transmitter : MonoBehaviour
     IEnumerator enviaMensaje(Evento mensaje, GameObject destino)
     {
         GameObject tmp = destino;
+        Debug.Log("a enviar");
         if (isTower)
         {
-            
             destino = GameObject.FindGameObjectWithTag("avion");
         }
         for (int i = 0; i < 1000; i++)
         {
             yield return new WaitForSeconds(this.espera);
-            if (checaSiRango(destino))
-            {
-                destino.GetComponent<Transmitter>().recibeMensaje(RSAencode(mensaje), tmp);
-            }
+            destino.GetComponent<Transmitter>().printSomething();
+            destino.GetComponent<Transmitter>().recibeMensaje(RSAencode(mensaje), tmp);
         }
     }
 
+    void printSomething()
+    {
+        Debug.Log(gameObject.tag + "12345");
+    }
+
+
     void recibeMensaje(Evento evento, GameObject destino)
     {
-        if (GameObject.ReferenceEquals(destino, this.gameObject))
+        Debug.Log("Recibiendo mensaje");
+        if (destino.tag == this.gameObject.tag)
         {
             logCod.Add(evento);
             Evento dec = RSAdecode(evento);
@@ -136,21 +168,9 @@ public class Transmitter : MonoBehaviour
             enviaMensaje(evento, destino);
         }
         
-    } 
-
-    bool checaSiRango(GameObject destino)
-    {
-        for (int i = 0; i < whiteList.Length; i++)
-        {
-            if (GameObject.ReferenceEquals(this.whiteList[i], (destino)) && Vector3.Distance(this.transform.position, destino.transform.position) <= this.range)
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
-
+    public Evento RSAdescode(Evento ev) {return ev;}
 
     public Evento RSAencode(Evento aCodificar)
     {
@@ -162,18 +182,20 @@ public class Transmitter : MonoBehaviour
         BigInteger y = new BigInteger(ASCIIEncoding.ASCII.GetBytes(aCodificar.position.y.ToString()));
         BigInteger z = new BigInteger(ASCIIEncoding.ASCII.GetBytes(aCodificar.position.z.ToString()));
 
-        if (id > this.publicKey || mat > this.publicKey || x > this.publicKey || y > this.publicKey || z > this.publicKey)
+        /*if (id > this.publicKey || mat > this.publicKey || x > this.publicKey || y > this.publicKey || z > this.publicKey)
         {
             throw new System.ArgumentException("Parameter cannot be encoded", "original");
-        }
+        }*/
 
         string cId = ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(id, this.e, this.publicKey).ToByteArray());
         string cMat = ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(mat, this.e, this.publicKey).ToByteArray());
-        float cX = float.Parse(ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(x, this.e, this.publicKey).ToByteArray()));
+        /*float cX = float.Parse(ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(x, this.e, this.publicKey).ToByteArray()));
         float cY = float.Parse(ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(y, this.e, this.publicKey).ToByteArray()));
-        float cZ = float.Parse(ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(z, this.e, this.publicKey).ToByteArray()));
+        float cZ = float.Parse(ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(z, this.e, this.publicKey).ToByteArray()));*/
+        float cX = System.BitConverter.ToSingle(BigInteger.ModPow(x, this.e, this.publicKey).ToByteArray(), 0);
+        float cY = System.BitConverter.ToSingle(BigInteger.ModPow(y, this.e, this.publicKey).ToByteArray(), 0);
+        float cZ = System.BitConverter.ToSingle(BigInteger.ModPow(z, this.e, this.publicKey).ToByteArray(), 0);
         Evento ev = new Evento(cId, cMat, new Vector3(cX, cY, cZ));
-        Debug.Log("Codificado: " + ev.ToString());
         return ev;        
     }
 
@@ -193,12 +215,17 @@ public class Transmitter : MonoBehaviour
 
         string dId = ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(id, this.privateKey, this.publicKey).ToByteArray());
         string dMat = ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(mat, this.privateKey, this.publicKey).ToByteArray());
-        float dX = float.Parse(ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(x, this.privateKey, this.publicKey).ToByteArray()));
+        /*float dX = float.Parse(ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(x, this.privateKey, this.publicKey).ToByteArray()));
         float dY = float.Parse(ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(y, this.privateKey, this.publicKey).ToByteArray()));
-        float dZ = float.Parse(ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(z, this.privateKey, this.publicKey).ToByteArray()));
+        float dZ = float.Parse(ASCIIEncoding.ASCII.GetString(BigInteger.ModPow(z, this.privateKey, this.publicKey).ToByteArray()));*/
+        float dX = System.BitConverter.ToSingle(BigInteger.ModPow(x, this.e, this.publicKey).ToByteArray(), 0);
+        float dY = System.BitConverter.ToSingle(BigInteger.ModPow(y, this.e, this.publicKey).ToByteArray(), 0);
+        float dZ = System.BitConverter.ToSingle(BigInteger.ModPow(z, this.e, this.publicKey).ToByteArray(), 0);
         Evento ev = new Evento(dId, dMat, new Vector3(dX, dY, dZ));
         return ev;
     }
+
+    
 
     private void OnTriggerEnter(Collider other)
     {
@@ -206,13 +233,14 @@ public class Transmitter : MonoBehaviour
         // Hay mensajes por enviar
         if(qEv.Count > 0)
         {
-            for(int i = 0; i < qEv.Count; i++)
+            for(int i = 0; i < dest.Count; i++)
             {
-                if (GameObject.ReferenceEquals(dest[i], other.gameObject))
+                if (dest[i].tag == other.gameObject.tag)
                 {
-                    enviaMensaje(qEv[i], dest[i]);
-                    qEv.RemoveAt(i);
-                    dest.RemoveAt(i);
+                Debug.Log("Enviando mensaje...");
+                enviaMensaje(qEv[i], dest[i]);
+                qEv.RemoveAt(i);
+                dest.RemoveAt(i);
                 }
             }
         }
